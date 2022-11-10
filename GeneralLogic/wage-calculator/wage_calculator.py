@@ -38,8 +38,12 @@ def main():
         y += 1
         for punch in timePunches:
             if punch.employee == employee.id:
-                hours = getTime(punch.start, punch.end)
+                hours = calculateShiftTime(punch.start, punch.end)
                 timeCategory = checkIfOvertime(hours, employee.timeWorked)
+
+                if timeCategory != 'R':
+                    calculateExtraHours()
+
                 employee.timeWorked += hours
                 employee.wageTotal += calculateWage(punch.job, hours, timeCategory)
                 
@@ -50,11 +54,12 @@ def main():
     file.close()
 
 
-def getTime(start,end):
+def calculateShiftTime(start,end):
         difference = end - start
         hours = difference / timedelta(hours=1)
         
         return hours
+        
 
 def calculateWage(jobType, hoursWorked, timeCategory):
     wageEarned = 0
@@ -76,16 +81,26 @@ def calculateWage(jobType, hoursWorked, timeCategory):
             benefitEarned = hoursWorked * i.benefitsRate
             return wageEarned
 
-def checkIfOvertime(hours, totalHoursWorked):
-    checkTime = totalHoursWorked + hours
 
-    if checkTime >= 48:
-        return ('D')
-    elif checkTime > 40:
-        return ('O')
+def checkIfOvertime(hours, totalHoursWorked):
+    newTotal = totalHoursWorked + hours
+    regularCap = 40
+    overtimeCap = 48
+
+    if newTotal > regularCap:
+        calculateExtraHours(newTotal)
+        if newTotal > overtimeCap:
+            return ('D')
+        else:
+            return ('O')
     else:
         return ('R')
     
+
+def calculateExtraHours(newTotal):
+
+    return
+
 
 
 if __name__ == "__main__":
