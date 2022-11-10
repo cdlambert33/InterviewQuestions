@@ -3,6 +3,10 @@ from classes import Employee, Job, TimePunch
 from datetime import datetime, timedelta
 
 jobs = []
+regularCap = 40
+overtimeCap = 48
+previousOvertime = 0
+
 
 def main():
     file = open('input.json')
@@ -38,14 +42,22 @@ def main():
         y += 1
         for punch in timePunches:
             if punch.employee == employee.id:
-                hours = calculateShiftTime(punch.start, punch.end)
-                timeCategory = checkIfOvertime(hours, employee.timeWorked)
+                currentShiftHours = calculateShiftTime(punch.start, punch.end)
 
-                if timeCategory != 'R':
-                    calculateExtraHours()
+                newTotal = employee.timeWorked + currentShiftHours
 
-                employee.timeWorked += hours
-                employee.wageTotal += calculateWage(punch.job, hours, timeCategory)
+                """timeCategory = checkTimeCategory(currentShiftHours, newTotal)"""
+
+                employee.timeWorked += currentShiftHours
+
+                if newTotal < regularCap:
+                    employee.wageTotal += calculateRegularWage(punch.job, currentShiftHours)
+
+                else:
+                    extraHours = calculateExtraHours(newTotal, currentShiftHours)
+                    employee.wageTotal += calculateExtraWage(punch.job, extraHours)
+
+                
                 
                 print(x)
                 x += 1  
@@ -56,39 +68,42 @@ def main():
 
 def calculateShiftTime(start,end):
         difference = end - start
-        hours = difference / timedelta(hours=1)
+        currentShiftHours = difference / timedelta(hours=1)
         
-        return hours
+        return currentShiftHours
         
 
-def calculateWage(jobType, hoursWorked, timeCategory):
+def calculateRegularWage(jobType, currentShiftHours):
     wageEarned = 0
-    benefitEarned = 0
+
+    for i in jobs:
+        if i.name == jobType:
+            wageEarned = currentShiftHours * i.rate
+
+            return wageEarned
+
+def calculateExtraWage(jobType, extraHours):
+    wageEarned = 0
     overtimeRate = 1.5
     doubletimeRate = 2
 
     for i in jobs:
         if i.name == jobType:
-            if timeCategory == 'R':
-                wageEarned = hoursWorked * i.rate
 
-            elif timeCategory == 'O':
-                wageEarned = hoursWorked * i.rate * overtimeRate
+            wageEarned += extraHours.get('overtime') * i.rate * overtimeRate
+            
+            if extraHours.get('underRegularCap') > 0:
+                wageEarned += extraHours.get('underRegularCap') * i.rate
 
-            else:
-                wageEarned = hoursWorked * i.rate * doubletimeRate
+            if extraHours.get('doubletime') > 0:
+                wageEarned += extraHours.get('doubletime') * i.rate * doubletimeRate
 
-            benefitEarned = hoursWorked * i.benefitsRate
             return wageEarned
 
 
-def checkIfOvertime(hours, totalHoursWorked):
-    newTotal = totalHoursWorked + hours
-    regularCap = 40
-    overtimeCap = 48
-
+def checkTimeCategory(newTotal):
+    
     if newTotal > regularCap:
-        calculateExtraHours(newTotal)
         if newTotal > overtimeCap:
             return ('D')
         else:
@@ -97,9 +112,25 @@ def checkIfOvertime(hours, totalHoursWorked):
         return ('R')
     
 
-def calculateExtraHours(newTotal):
+def calculateExtraHours(newTotal, currentShiftHours):
+    extraHoursDifference = overtimeCap - regularCap
 
-    return
+    overtime = newTotal - regularCap
+    doubletime = 0
+
+    if overtime > extraHoursDifference:
+        doubletime = overtime - extraHoursDifference
+        overtime = overtime - doubletime
+
+    underRegularCap = currentShiftHours - overtime
+
+    extraHours = {
+        "overtime": overtime,
+        "doubletime": doubletime,
+        "underRegularCap": underRegularCap
+    }
+
+    return extraHours
 
 
 
