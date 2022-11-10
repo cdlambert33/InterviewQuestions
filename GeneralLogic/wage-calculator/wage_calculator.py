@@ -2,13 +2,13 @@ import json
 from classes import Employee, Job, TimePunch
 from datetime import datetime, timedelta
 
+jobs = []
 
 def main():
     file = open('input.json')
 
     data = json.load(file)
 
-    jobs = []
     employees = []
     timePunches = []
 
@@ -16,8 +16,9 @@ def main():
         job = Job(i.get('job'), i.get('rate'), i.get('benefitsRate'))
         jobs.append(job)
 
+    id = 0
     for i in data['employeeData']:
-        id = 0
+        
         employee = Employee(id, i.get('employee'), 0, 0, 0)
         employees.append(employee)
 
@@ -29,19 +30,62 @@ def main():
         
         id += 1
 
-
+    y = 1
     for employee in employees:
+        x = 1
+        
+        print('employee ' + str(y))
+        y += 1
         for punch in timePunches:
-            getTime(punch.start, punch.end)
-            
+            if punch.employee == employee.id:
+                hours = getTime(punch.start, punch.end)
+                timeCategory = checkIfOvertime(hours, employee.timeWorked)
+                employee.timeWorked += hours
+                employee.wageTotal += calculateWage(punch.job, hours, timeCategory)
+                
+                print(x)
+                x += 1  
+        
 
     file.close()
 
 
 def getTime(start,end):
         difference = end - start
+        hours = difference / timedelta(hours=1)
         
-        return
+        return hours
+
+def calculateWage(jobType, hoursWorked, timeCategory):
+    wageEarned = 0
+    benefitEarned = 0
+    overtimeRate = 1.5
+    doubletimeRate = 2
+
+    for i in jobs:
+        if i.name == jobType:
+            if timeCategory == 'R':
+                wageEarned = hoursWorked * i.rate
+
+            elif timeCategory == 'O':
+                wageEarned = hoursWorked * i.rate * overtimeRate
+
+            else:
+                wageEarned = hoursWorked * i.rate * doubletimeRate
+
+            benefitEarned = hoursWorked * i.benefitsRate
+            return wageEarned
+
+def checkIfOvertime(hours, totalHoursWorked):
+    checkTime = totalHoursWorked + hours
+
+    if checkTime >= 48:
+        return ('D')
+    elif checkTime > 40:
+        return ('O')
+    else:
+        return ('R')
+    
 
 
 if __name__ == "__main__":
