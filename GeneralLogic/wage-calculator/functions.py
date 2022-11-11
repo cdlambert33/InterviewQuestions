@@ -8,7 +8,6 @@ overtimeCap = 48
 
 
 def loadData(data):
-    
     employees = []
     timePunches = []
     values = []
@@ -50,6 +49,7 @@ def calculateRegularWage(jobType, currentShiftHours):
 
             return wageEarned
 
+
 def calculateExtraWage(jobType, extraHours):
     wageEarned = 0
     overtimeRate = 1.5
@@ -68,17 +68,6 @@ def calculateExtraWage(jobType, extraHours):
                 wageEarned += extraHours.get('doubletime') * i.rate * doubletimeRate
 
             return wageEarned
-
-
-def checkTimeCategory(newTotal):
-    
-    if newTotal > regularCap:
-        if newTotal > overtimeCap:
-            return ('D')
-        else:
-            return ('O')
-    else:
-        return ('R')
     
 
 def calculateExtraHours(newTotal, currentShiftHours):
@@ -98,7 +87,6 @@ def calculateExtraHours(newTotal, currentShiftHours):
         doubletime = newTotal - overtimeCap
         overtime = overtime - doubletime
 
-
     extraHours = {
         "overtime": overtime,
         "doubletime": doubletime,
@@ -114,7 +102,9 @@ def calculateBenefits(job, hours):
     for i in jobs:
         if i.name == job:
             benefits += i.benefitsRate * hours
+            
     return benefits
+
 
 def calculateExtraBenefits(job, extraHours):
     benefits = 0
@@ -128,7 +118,7 @@ def calculateExtraBenefits(job, extraHours):
 
             if extraHours.get('doubletime') > 0:
                 benefits += i.benefitsRate * extraHours.get('doubletime')
-
+                
     return benefits
 
 
@@ -140,3 +130,19 @@ def cleanUpNumbers(employee):
     employee.benefitTotal = str(round(Decimal(employee.benefitTotal), 4))
 
     return employee
+
+
+def formatData(results):
+    finalResults = {
+            'employee': results.employee,
+            'regular': results.regular,
+            'overtime': results.overtime,
+            'doubletime': results.doubletime,
+            'wageTotal': results.wageTotal,
+            'benefitTotal': results.benefitTotal
+        }
+    resultsDict = {
+        finalResults['employee']: finalResults
+    }
+
+    return resultsDict

@@ -1,5 +1,4 @@
-class Job:
-    
+class Job:    
     def __init__(self, name, rate, benefitsRate):
         self.name = name
         self.rate = rate
