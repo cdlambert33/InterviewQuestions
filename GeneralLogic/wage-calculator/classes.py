@@ -14,9 +14,12 @@ class TimePunch:
         self.end = end
 
 class Employee:
-    def __init__(self, id, employee, timeWorked, wageTotal, benefitTotal):
+    def __init__(self, id, employee, timeWorked, regular, overtime, doubletime, wageTotal, benefitTotal):
         self.id = id
         self.employee = employee
         self.timeWorked = timeWorked
+        self.regular = regular
+        self.overtime = overtime
+        self.doubletime = doubletime
         self.wageTotal = wageTotal
         self.benefitTotal = benefitTotal

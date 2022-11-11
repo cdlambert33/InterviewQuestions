@@ -90,10 +90,11 @@ def calculateExtraWage(jobType, extraHours):
     for i in jobs:
         if i.name == jobType:
 
-            wageEarned += extraHours.get('overtime') * i.rate * overtimeRate
-            
-            if extraHours.get('underRegularCap') > 0:
-                wageEarned += extraHours.get('underRegularCap') * i.rate
+            if extraHours.get('regular') > 0:
+                wageEarned += extraHours.get('regular') * i.rate
+
+            if extraHours.get('overtime') > 0:
+                wageEarned += extraHours.get('overtime') * i.rate * overtimeRate
 
             if extraHours.get('doubletime') > 0:
                 wageEarned += extraHours.get('doubletime') * i.rate * doubletimeRate
@@ -113,21 +114,27 @@ def checkTimeCategory(newTotal):
     
 
 def calculateExtraHours(newTotal, currentShiftHours):
-    extraHoursDifference = overtimeCap - regularCap
-
-    overtime = newTotal - regularCap
+    regular = 0
+    overtime = 0
     doubletime = 0
 
-    if overtime > extraHoursDifference:
-        doubletime = overtime - extraHoursDifference
+    totalBeforeCurrentShift = newTotal - currentShiftHours
+
+    if totalBeforeCurrentShift > regularCap:
+        overtime = currentShiftHours
+    else:
+        overtime = newTotal - regularCap
+        regular = currentShiftHours - overtime
+
+    if newTotal > overtimeCap:
+        doubletime = newTotal - overtimeCap
         overtime = overtime - doubletime
 
-    underRegularCap = currentShiftHours - overtime
 
     extraHours = {
         "overtime": overtime,
         "doubletime": doubletime,
-        "underRegularCap": underRegularCap
+        "regular": regular
     }
 
     return extraHours
