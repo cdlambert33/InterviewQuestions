@@ -1,6 +1,7 @@
 import json
 from classes import Employee, Job, TimePunch
 from datetime import datetime, timedelta
+from decimal import Decimal, getcontext
 
 jobs = []
 regularCap = 40
@@ -20,48 +21,48 @@ def main():
         job = Job(i.get('job'), i.get('rate'), i.get('benefitsRate'))
         jobs.append(job)
 
-    id = 0
     for i in data['employeeData']:
         
-        employee = Employee(id, i.get('employee'), 0, 0, 0)
+        employee = Employee(i.get('employee'), 0, 0, 0, 0, 0)
         employees.append(employee)
 
         for j in i['timePunch']:
             start = datetime.strptime(j.get('start'), '%Y-%m-%d %H:%M:%S')
             end = datetime.strptime(j.get('end'), '%Y-%m-%d %H:%M:%S')
-            punch = TimePunch(id, j.get('job'), start, end)
+            punch = TimePunch(employee.employee, j.get('job'), start, end)
             timePunches.append(punch)
         
-        id += 1
-
-    y = 1
-    for employee in employees:
-        x = 1
         
-        print('employee ' + str(y))
-        y += 1
+    for employee in employees:
+        timeWorked = 0
+
         for punch in timePunches:
-            if punch.employee == employee.id:
+            if punch.employee == employee.employee:
                 currentShiftHours = calculateShiftTime(punch.start, punch.end)
 
-                newTotal = employee.timeWorked + currentShiftHours
+                newTotal = timeWorked + currentShiftHours
 
                 """timeCategory = checkTimeCategory(currentShiftHours, newTotal)"""
 
-                employee.timeWorked += currentShiftHours
+                timeWorked += currentShiftHours
+                job = punch.job
 
                 if newTotal < regularCap:
-                    employee.wageTotal += calculateRegularWage(punch.job, currentShiftHours)
+                    employee.wageTotal += calculateRegularWage(job, currentShiftHours)
+                    employee.regular += currentShiftHours
+                    employee.benefitTotal += calculateBenefits(job, currentShiftHours)
 
                 else:
                     extraHours = calculateExtraHours(newTotal, currentShiftHours)
                     employee.wageTotal += calculateExtraWage(punch.job, extraHours)
-
-                
-                
-                print(x)
-                x += 1  
+                    employee.overtime += extraHours.get('overtime')
+                    employee.doubletime += extraHours.get('doubletime')
+                    employee.benefitTotal += calculateExtraBenefits(job, extraHours)
+                    employee.regular = regularCap
         
+        cleanResults = cleanUpNumbers(employee)
+
+        print(vars(cleanResults))
 
     file.close()
 
@@ -139,6 +140,39 @@ def calculateExtraHours(newTotal, currentShiftHours):
 
     return extraHours
 
+
+def calculateBenefits(job, hours):
+    benefits = 0
+    
+    for i in jobs:
+        if i.name == job:
+            benefits += i.benefitsRate * hours
+    return benefits
+
+def calculateExtraBenefits(job, extraHours):
+    benefits = 0
+    for i in jobs:
+        if i.name == job:
+            if extraHours.get('regular') > 0:
+                benefits += i.benefitsRate * extraHours.get('regular')
+
+            if extraHours.get('overtime') > 0:
+                benefits += i.benefitsRate * extraHours.get('overtime')
+
+            if extraHours.get('doubletime') > 0:
+                benefits += i.benefitsRate * extraHours.get('doubletime')
+
+    return benefits
+
+
+def cleanUpNumbers(employee):
+    employee.regular = str(round(Decimal(employee.regular), 4))
+    employee.overtime = str(round(Decimal(employee.overtime), 4))
+    employee.doubletime = str(round(Decimal(employee.doubletime), 4))
+    employee.wageTotal = str(round(Decimal(employee.wageTotal), 4))
+    employee.benefitTotal = str(round(Decimal(employee.benefitTotal), 4))
+
+    return employee
 
 
 if __name__ == "__main__":
