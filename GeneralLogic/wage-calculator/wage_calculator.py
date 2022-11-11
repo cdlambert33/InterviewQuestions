@@ -1,37 +1,20 @@
 import json
-from classes import Employee, Job, TimePunch
-from datetime import datetime, timedelta
-from decimal import Decimal, getcontext
-
-jobs = []
-regularCap = 40
-overtimeCap = 48
-previousOvertime = 0
+import jsonpickle
+from functions import *
 
 
 def main():
-    file = open('input.json')
+    input = open('input.json')
+    data = json.load(input)
+    values = loadData(data)   
+    input.close()     
 
-    data = json.load(file)
+    employees = values[0]
+    timePunches = values[1]
 
-    employees = []
-    timePunches = []
-
-    for i in data['jobMeta']:
-        job = Job(i.get('job'), i.get('rate'), i.get('benefitsRate'))
-        jobs.append(job)
-
-    for i in data['employeeData']:
-        
-        employee = Employee(i.get('employee'), 0, 0, 0, 0, 0)
-        employees.append(employee)
-
-        for j in i['timePunch']:
-            start = datetime.strptime(j.get('start'), '%Y-%m-%d %H:%M:%S')
-            end = datetime.strptime(j.get('end'), '%Y-%m-%d %H:%M:%S')
-            punch = TimePunch(employee.employee, j.get('job'), start, end)
-            timePunches.append(punch)
-        
+    results = {}
+    allResults = []
+    finalResults = {}
         
     for employee in employees:
         timeWorked = 0
@@ -60,119 +43,31 @@ def main():
                     employee.benefitTotal += calculateExtraBenefits(job, extraHours)
                     employee.regular = regularCap
         
-        cleanResults = cleanUpNumbers(employee)
-
-        print(vars(cleanResults))
-
-    file.close()
-
-
-def calculateShiftTime(start,end):
-        difference = end - start
-        currentShiftHours = difference / timedelta(hours=1)
         
-        return currentShiftHours
+        results = cleanUpNumbers(employee)
+        """finalResult = jsonpickle.encode(cleanedResult)"""
+        finalResults = {
+            'employee': results.employee,
+            'regular': results.regular,
+            'overtime': results.overtime,
+            'doubletime': results.doubletime,
+            'wageTotal': results.wageTotal,
+            'benefitTotal': results.benefitTotal
+        }
+        resultsDict = {
+            finalResults['employee']: finalResults
+        }
+        allResults.append(resultsDict)
+
+        print(vars(results))
+
+    with open('output.json', 'w') as outfile:
+        """for i in allResults:"""
+        json_data = json.dumps(allResults, indent=2)
+        outfile.write(json_data)
         
 
-def calculateRegularWage(jobType, currentShiftHours):
-    wageEarned = 0
-
-    for i in jobs:
-        if i.name == jobType:
-            wageEarned = currentShiftHours * i.rate
-
-            return wageEarned
-
-def calculateExtraWage(jobType, extraHours):
-    wageEarned = 0
-    overtimeRate = 1.5
-    doubletimeRate = 2
-
-    for i in jobs:
-        if i.name == jobType:
-
-            if extraHours.get('regular') > 0:
-                wageEarned += extraHours.get('regular') * i.rate
-
-            if extraHours.get('overtime') > 0:
-                wageEarned += extraHours.get('overtime') * i.rate * overtimeRate
-
-            if extraHours.get('doubletime') > 0:
-                wageEarned += extraHours.get('doubletime') * i.rate * doubletimeRate
-
-            return wageEarned
-
-
-def checkTimeCategory(newTotal):
-    
-    if newTotal > regularCap:
-        if newTotal > overtimeCap:
-            return ('D')
-        else:
-            return ('O')
-    else:
-        return ('R')
-    
-
-def calculateExtraHours(newTotal, currentShiftHours):
-    regular = 0
-    overtime = 0
-    doubletime = 0
-
-    totalBeforeCurrentShift = newTotal - currentShiftHours
-
-    if totalBeforeCurrentShift > regularCap:
-        overtime = currentShiftHours
-    else:
-        overtime = newTotal - regularCap
-        regular = currentShiftHours - overtime
-
-    if newTotal > overtimeCap:
-        doubletime = newTotal - overtimeCap
-        overtime = overtime - doubletime
-
-
-    extraHours = {
-        "overtime": overtime,
-        "doubletime": doubletime,
-        "regular": regular
-    }
-
-    return extraHours
-
-
-def calculateBenefits(job, hours):
-    benefits = 0
-    
-    for i in jobs:
-        if i.name == job:
-            benefits += i.benefitsRate * hours
-    return benefits
-
-def calculateExtraBenefits(job, extraHours):
-    benefits = 0
-    for i in jobs:
-        if i.name == job:
-            if extraHours.get('regular') > 0:
-                benefits += i.benefitsRate * extraHours.get('regular')
-
-            if extraHours.get('overtime') > 0:
-                benefits += i.benefitsRate * extraHours.get('overtime')
-
-            if extraHours.get('doubletime') > 0:
-                benefits += i.benefitsRate * extraHours.get('doubletime')
-
-    return benefits
-
-
-def cleanUpNumbers(employee):
-    employee.regular = str(round(Decimal(employee.regular), 4))
-    employee.overtime = str(round(Decimal(employee.overtime), 4))
-    employee.doubletime = str(round(Decimal(employee.doubletime), 4))
-    employee.wageTotal = str(round(Decimal(employee.wageTotal), 4))
-    employee.benefitTotal = str(round(Decimal(employee.benefitTotal), 4))
-
-    return employee
+    outfile.close()
 
 
 if __name__ == "__main__":
